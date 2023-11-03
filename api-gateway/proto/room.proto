@@ -1,0 +1,56 @@
+syntax="proto3";
+import "room_type.proto";
+
+package proto;
+
+option go_package = "./pkg/pb";
+
+service RoomService {
+  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
+  rpc DeleteRoom(DeleteRoomRequest) returns (Empty);
+  rpc GetAvailableRooms(Empty) returns (GetAvailableRoomsResponse);
+  rpc UpdateRoom(UpdateRoomRequest) returns (Empty);
+  rpc GetRoomByNumber(GetRoomByNumberRequest) returns (GetRoomByNumberResponse);
+}
+
+// ======================================================
+
+
+message Room {
+  int32 room_number = 1;
+  RoomType room_type = 2;
+}
+
+// =====================================================
+message CreateRoomRequest {
+  Room room = 1;
+}
+
+message CreateRoomResponse {
+  string id = 1;
+}
+
+
+// ======================================================
+message DeleteRoomRequest {
+  int32 room_number = 1;
+}
+
+// ======================================================
+
+message GetAvailableRoomsResponse {
+  repeated Room rooms = 1;
+
+}
+
+message UpdateRoomRequest {
+  Room room = 1;
+}
+
+message GetRoomByNumberRequest {
+  int32 room_number = 1;
+}
+
+message GetRoomByNumberResponse {
+  Room room = 1;
+}

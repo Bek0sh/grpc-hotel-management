@@ -1,0 +1,49 @@
+syntax="proto3";
+
+package proto;
+
+option go_package = "./pkg/pb";
+
+service RoomTypeService {
+  rpc CreateRoomType(CreateRoomTypeReq) returns (CreateRoomTypeRes);
+  rpc DeleteRoomType(DeleteRoomTypeReq) returns (Empty);
+  rpc UpdateRoomType(UpdateRoomTypeReq) returns (Empty);
+  rpc GetAllRoomTypes(Empty) returns (GetAllRoomTypesRes);
+  rpc GetByRoomType(GetByRoomTypeReq) returns (GetByRoomTypeRes);
+}
+
+message Empty {}
+
+message RoomType {
+  string room_type = 2;
+  int32 price = 3;
+}
+
+message CreateRoomTypeReq {
+  string type = 1;
+  int32 price = 2;
+}
+
+message CreateRoomTypeRes {
+  string id = 1;
+}
+
+message DeleteRoomTypeReq {
+  string type = 1;
+}
+
+message GetAllRoomTypesRes {
+  repeated RoomType room_type = 1;
+}
+
+message UpdateRoomTypeReq {
+  RoomType room_type = 1;
+}
+
+message GetByRoomTypeReq {
+  string room_type = 1;
+}
+
+message GetByRoomTypeRes {
+  RoomType room_type = 1;
+}

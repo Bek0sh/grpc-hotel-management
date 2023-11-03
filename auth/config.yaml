@@ -1,0 +1,19 @@
+---
+
+is_debug: true
+
+run:
+  port: :8080
+
+mongo:
+  username: root
+  password: 1234
+  port: 27017
+  host: localhost
+  authDB: admin
+  db_name: hotel-manage-users
+  collection_name: users
+
+jwt:
+  access_token_dur: 15
+  secret_key: jM8p2sLqR6oT9xK7nY1
