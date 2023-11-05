@@ -13,12 +13,6 @@ func (b *booking) CreateBooking(ctx context.Context, req *models.Booking) error 
 		return err
 	}
 
-	err = b.repo.UpdateAvailableness(ctx, req.Room.RoomNumber, false)
-
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -45,16 +39,7 @@ func (b *booking) DeleteBooking(ctx context.Context, id string) error {
 		"booking_id": id,
 	}
 
-	booking, err := b.GetBookingById(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	err = b.repo.UpdateAvailableness(ctx, booking.Room.RoomNumber, true)
-	if err != nil {
-		return err
-	}
-	_, err = b.DeleteOne(ctx, filter)
+	_, err := b.DeleteOne(ctx, filter)
 
 	if err != nil {
 		b.log.Errorf("failed to delete booking with id=%s, error: %v", id, err)
@@ -118,7 +103,7 @@ func (b *booking) GetAllBookings(ctx context.Context) ([]models.Booking, error) 
 
 func (b *booking) GetBookingByRoomNumber(ctx context.Context, roomNumber int) (*models.Booking, error) {
 	filter := bson.M{
-		"room.room_number": roomNumber,
+		"room_id": roomNumber,
 	}
 
 	response := &models.Booking{}
@@ -138,12 +123,10 @@ func (b *booking) UpdateBooking(ctx context.Context, req *models.Booking) error 
 	}
 	update := bson.M{
 		"$set": bson.M{
-			"check_in_date":        req.CheckInDate,
-			"check_out_date":       req.CheckOutDate,
-			"room.room_number":     req.Room.RoomNumber,
-			"room.room_type.type":  req.Room.RoomType.Type,
-			"room.room_type.price": req.Room.RoomType.Price,
-			"total_price":          req.TotalPrice,
+			"check_in_date":  req.CheckInDate,
+			"check_out_date": req.CheckOutDate,
+			"room_id":        req.Room.RoomNumber,
+			"total_price":    req.TotalPrice,
 		},
 	}
 

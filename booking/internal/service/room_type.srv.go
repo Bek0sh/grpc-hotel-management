@@ -18,7 +18,7 @@ func (r *roomTypeService) CreateRoomType(ctx context.Context, req *pb.CreateRoom
 		Price:      int(req.GetPrice()),
 	}
 
-	err := r.repo.CreateRoomType(ctx, rt)
+	err := r.repo.RoomType.CreateRoomType(ctx, rt)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func (r *roomTypeService) CreateRoomType(ctx context.Context, req *pb.CreateRoom
 	return &pb.CreateRoomTypeRes{Id: roomTypeId}, nil
 }
 func (r *roomTypeService) DeleteRoomType(ctx context.Context, req *pb.DeleteRoomTypeReq) (*pb.Empty, error) {
-	err := r.repo.DeleteRoomTypeByType(ctx, req.Type)
+	err := r.repo.RoomType.DeleteRoomTypeByType(ctx, req.Type)
 
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (r *roomTypeService) DeleteRoomType(ctx context.Context, req *pb.DeleteRoom
 	return &pb.Empty{}, nil
 }
 func (r *roomTypeService) UpdateRoomType(ctx context.Context, req *pb.UpdateRoomTypeReq) (*pb.Empty, error) {
-	err := r.repo.UpdateRoomType(ctx, req.GetRoomType().GetRoomType(), int(req.GetRoomType().GetPrice()))
+	err := r.repo.RoomType.UpdateRoomType(ctx, req.GetRoomType().GetRoomType(), int(req.GetRoomType().GetPrice()))
 
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (r *roomTypeService) UpdateRoomType(ctx context.Context, req *pb.UpdateRoom
 }
 
 func (r *roomTypeService) GetAllRoomTypes(ctx context.Context, req *pb.Empty) (*pb.GetAllRoomTypesRes, error) {
-	res, err := r.repo.GetAllRoomTypes(ctx)
+	res, err := r.repo.RoomType.GetAllRoomTypes(ctx)
 
 	if err != nil {
 		return nil, err
@@ -63,8 +63,9 @@ func (r *roomTypeService) GetAllRoomTypes(ctx context.Context, req *pb.Empty) (*
 
 	return &pb.GetAllRoomTypesRes{RoomType: response}, nil
 }
+
 func (r *roomTypeService) GetByRoomType(ctx context.Context, req *pb.GetByRoomTypeReq) (*pb.GetByRoomTypeRes, error) {
-	res, err := r.repo.GetRoomTypeByType(ctx, req.GetRoomType())
+	res, err := r.repo.RoomType.GetRoomTypeByType(ctx, req.GetRoomType())
 
 	if err != nil {
 		return nil, err

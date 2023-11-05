@@ -1,6 +1,6 @@
 syntax="proto3";
-import "room.proto";
 import "room_type.proto";
+import "room.proto";
 package proto;
 
 
@@ -16,17 +16,18 @@ service BookingService {
 
 message Booking {
   string customer_id = 1;
-  Room room = 2;
+  int32 room_number = 2;
   string check_in_date = 3;
   string check_out_date = 4;
   int32 total_price = 5;
+  Room room = 6;
 }
 
 // =================================================================
 // Create Booking
 message CreateBookingRequest {
   string customer_id = 1;
-  Room room = 2;
+  int32 room_number = 2;
   string check_in_date = 3;
   string check_out_date = 4;
 }
@@ -40,7 +41,7 @@ message CreateBookingResponse {
 // Delete Booking
 
 message DeleteBookingRequest {
-  string booking_id = 1;
+  int32 room_number = 1;
 }
 
 // =================================================================
@@ -58,7 +59,7 @@ message GetBookingForCustomerResponse {
 // Update Booking
 
 message UpdateBookingRequest {
-  Room room = 1;
+  int32 room_number = 1;
   string check_in_date = 2;
   string check_out_date = 3;
 }

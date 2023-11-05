@@ -18,33 +18,23 @@ func (b *bookingService) CreateBooking(ctx context.Context, req *pb.CreateBookin
 	id := primitive.NewObjectID()
 	bookingId := id.Hex()
 
-	roomType := struct {
-		Type  string `bson:"type" json:"type"`
-		Price int    `bson:"price" json:"price"`
-	}{
-		Type:  req.GetRoom().GetRoomType().GetRoomType(),
-		Price: int(req.GetRoom().GetRoomType().GetPrice()),
+	room, err := b.repo.Room.GetRoomByNumber(ctx, int(req.GetRoomNumber()))
+	if err != nil {
+		return nil, err
 	}
-
-	room := struct {
-		RoomNumber int `bson:"room_number" json:"room_number"`
-		RoomType   struct {
-			Type  string `bson:"type" json:"type"`
-			Price int    `bson:"price" json:"price"`
-		} `bson:"room_type" json:"room_type"`
-	}{
-		RoomNumber: int(req.GetRoom().GetRoomNumber()),
-		RoomType:   roomType,
+	roomType, err := b.repo.RoomType.GetRoomTypeByType(ctx, room.RoomTypeId)
+	if err != nil {
+		return nil, err
 	}
-
+	custId := req.GetCustomerId()
 	createBooking := models.Booking{
 		Id:           id,
 		BookingId:    bookingId,
+		CustomerId:   &custId,
 		CheckInDate:  req.GetCheckInDate(),
 		CheckOutDate: req.GetCheckOutDate(),
-		Room:         room,
+		RoomId:       room.RoomNumber,
 	}
-
 	totalPrice, err := calculatePrice(req.GetCheckInDate(), req.GetCheckOutDate(), roomType.Price)
 	if err != nil {
 		b.log.Errorf("failed to create booking, invalid date, error: %v", err)
@@ -52,8 +42,13 @@ func (b *bookingService) CreateBooking(ctx context.Context, req *pb.CreateBookin
 	}
 	createBooking.TotalPrice = totalPrice
 
-	err = b.repo.CreateBooking(ctx, &createBooking)
+	err = b.repo.Booking.CreateBooking(ctx, &createBooking)
 
+	if err != nil {
+		return nil, err
+	}
+
+	err = b.repo.Room.UpdateAvailableness(ctx, room.RoomNumber, false)
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +61,7 @@ func calculatePrice(in string, out string, price int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	checkOut, err := time.Parse(constTime, out)
 	if err != nil {
 		return 0, err
@@ -84,7 +80,15 @@ func calculatePrice(in string, out string, price int) (int, error) {
 }
 
 func (b *bookingService) DeleteBooking(ctx context.Context, req *pb.DeleteBookingRequest) (*pb.Empty, error) {
-	err := b.repo.DeleteBooking(ctx, req.GetBookingId())
+	booking, err := b.repo.Booking.GetBookingByRoomNumber(ctx, int(req.GetRoomNumber()))
+	if err != nil {
+		return nil, err
+	}
+	err = b.repo.Booking.DeleteBooking(ctx, booking.BookingId)
+	if err != nil {
+		return nil, err
+	}
+	err = b.repo.Room.UpdateAvailableness(ctx, booking.RoomId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -94,22 +98,33 @@ func (b *bookingService) DeleteBooking(ctx context.Context, req *pb.DeleteBookin
 func (b *bookingService) GetBookingsForCustomer(ctx context.Context, req *pb.GetBookingsForCustomerRequest) (*pb.GetBookingForCustomerResponse, error) {
 	var response []*pb.Booking
 
-	res, err := b.repo.GetBookingForCustomer(ctx, req.GetCustomerId())
+	res, err := b.repo.Booking.GetBookingForCustomer(ctx, req.GetCustomerId())
 
 	if err != nil {
 		return nil, err
 	}
 
 	for _, v := range res {
+
+		room, err := b.repo.Room.GetRoomByNumber(ctx, v.RoomId)
+		if err != nil {
+			return nil, err
+		}
+
+		roomType, err := b.repo.RoomType.GetRoomTypeByType(ctx, room.RoomTypeId)
+		if err != nil {
+			return nil, err
+		}
+
 		booking := &pb.Booking{
 			CheckOutDate: v.CheckOutDate,
 			CheckInDate:  v.CheckInDate,
 			TotalPrice:   int32(v.TotalPrice),
 			Room: &pb.Room{
-				RoomNumber: int32(v.Room.RoomNumber),
+				RoomNumber: int32(room.RoomNumber),
 				RoomType: &pb.RoomType{
-					RoomType: v.Room.RoomType.Type,
-					Price:    int32(v.Room.RoomType.Price),
+					RoomType: roomType.Type,
+					Price:    int32(roomType.Price),
 				},
 			},
 		}
@@ -122,25 +137,45 @@ func (b *bookingService) GetBookingsForCustomer(ctx context.Context, req *pb.Get
 func (b *bookingService) UpdateBooking(ctx context.Context, req *pb.UpdateBookingRequest) (*pb.UpdateBookingResponse, error) {
 	var message string
 
-	booking, err := b.repo.GetBookingByRoomNumber(ctx, int(req.GetRoom().GetRoomNumber()))
+	booking, err := b.repo.Booking.GetBookingByRoomNumber(ctx, int(req.GetRoomNumber()))
 	if err != nil {
 		return nil, err
+	}
+
+	room, err := b.repo.Room.GetRoomByNumber(ctx, int(req.GetRoomNumber()))
+	if err != nil {
+		return nil, err
+	}
+
+	roomType, err := b.repo.RoomType.GetRoomTypeByType(ctx, room.RoomTypeId)
+	if err != nil {
+		return nil, err
+	}
+	checkInDate := req.GetCheckInDate()
+	checkOutDate := req.GetCheckOutDate()
+
+	if checkInDate == "" {
+		checkInDate = booking.CheckInDate
+	}
+	if checkOutDate == "" {
+		checkOutDate = booking.CheckOutDate
 	}
 
 	update := models.Booking{
 		BookingId:    booking.BookingId,
-		CheckInDate:  req.GetCheckInDate(),
-		CheckOutDate: req.GetCheckOutDate(),
+		CheckInDate:  checkInDate,
+		CheckOutDate: checkOutDate,
 	}
 
-	totalPrice, err := calculatePrice(update.CheckInDate, update.CheckOutDate, int(req.GetRoom().GetRoomType().GetPrice()))
+	totalPrice, err := calculatePrice(checkInDate, checkOutDate, roomType.Price)
 
 	if err != nil {
 		return nil, err
 	}
+
 	update.TotalPrice = totalPrice
 
-	err = b.repo.UpdateBooking(ctx, &update)
+	err = b.repo.Booking.UpdateBooking(ctx, &update)
 	if err != nil {
 		return nil, err
 	}
@@ -158,25 +193,35 @@ func (b *bookingService) UpdateBooking(ctx context.Context, req *pb.UpdateBookin
 func (b *bookingService) GetAllBookings(ctx context.Context, _ *pb.Empty) (*pb.GetAllBookingsResponse, error) {
 	var response []*pb.Booking
 
-	res, err := b.repo.GetAllBookings(ctx)
+	res, err := b.repo.Booking.GetAllBookings(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
 	for _, v := range res {
+
+		room, err := b.repo.Room.GetRoomByNumber(ctx, v.RoomId)
+		if err != nil {
+			return nil, err
+		}
+
+		roomType, err := b.repo.RoomType.GetRoomTypeByType(ctx, room.RoomTypeId)
+		if err != nil {
+			return nil, err
+		}
+
 		booking := &pb.Booking{
 			CheckOutDate: v.CheckOutDate,
 			CheckInDate:  v.CheckInDate,
 			TotalPrice:   int32(v.TotalPrice),
 			Room: &pb.Room{
-				RoomNumber: int32(v.Room.RoomNumber),
+				RoomNumber: int32(room.RoomNumber),
 				RoomType: &pb.RoomType{
-					RoomType: v.Room.RoomType.Type,
-					Price:    int32(v.Room.RoomType.Price),
+					RoomType: roomType.Type,
+					Price:    int32(roomType.Price),
 				},
 			},
-			CustomerId: *v.CustomerId,
 		}
 		response = append(response, booking)
 	}

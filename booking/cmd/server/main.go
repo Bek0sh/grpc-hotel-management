@@ -20,13 +20,11 @@ func main() {
 	db.GetInstance(*cfg)
 	database := db.GetDatabase()
 
-	roomTypeRepo := repository.NewRoomTypeRepository(logger, database.Database)
-	roomRepo := repository.NewRoomRepo(logger, database.Database)
-	bookingRepo := repository.NewBookingRepo(logger, database.Database)
+	repo := repository.NewRepository(logger, database.Database)
 
-	roomTypeSrv := service.NewRoomTypeService(logger, roomTypeRepo)
-	roomSrv := service.NewRoomService(logger, roomRepo)
-	bookingSrv := service.NewBookingService(logger, bookingRepo)
+	roomTypeSrv := service.NewRoomTypeService(logger, repo)
+	roomSrv := service.NewRoomService(logger, repo)
+	bookingSrv := service.NewBookingService(logger, repo)
 
 	listener, err := net.Listen("tcp", cfg.Run.Port)
 

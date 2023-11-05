@@ -9,9 +9,6 @@ import (
 )
 
 func (r *room) CreateRoom(ctx context.Context, req *models.Room) error {
-	if ok := r.repo.CategoryExists(ctx, req.RoomType.Type); !ok {
-		return fmt.Errorf("room type that you want does not exist")
-	}
 
 	_, err := r.InsertOne(ctx, req)
 
@@ -87,7 +84,7 @@ func (r *room) UpdateAvailableness(ctx context.Context, roomNumber int, isAvaila
 	return nil
 }
 
-func (r *room) UpdateRoom(ctx context.Context, req *models.Room, isAvailable bool) error {
+func (r *room) UpdateRoom(ctx context.Context, req *models.Room) error {
 	filter := bson.M{
 		"room_number": req.RoomNumber,
 	}

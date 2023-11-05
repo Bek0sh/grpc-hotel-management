@@ -7,14 +7,12 @@ type Room struct {
 	RoomNumber  int                `bson:"room_number" json:"room_number"`
 	IsAvailable bool               `bson:"is_available" json:"-"`
 	RoomId      string             `bson:"room_id" json:"-"`
-	RoomType    struct {
-		Type  string `bson:"type" json:"type"`
-		Price int    `bson:"price" json:"price"`
-	} `bson:"room_type" json:"room_type"`
+	RoomTypeId  string             `bson:"room_type_id" json:"-"`
+	RoomType    RoomType           `bson:"-" json:"room_type"`
 }
 
 type RoomType struct {
-	Id         primitive.ObjectID `json:"id,omitempty" bson:"_id"`
+	Id         primitive.ObjectID `json:"-,omitempty" bson:"_id"`
 	Type       string             `json:"type,omitempty" bson:"type"`
 	Price      int                `json:"price,omitempty" bson:"price"`
 	RoomTypeId string             `json:"room_type_id,omitempty" bson:"room_type_id"`

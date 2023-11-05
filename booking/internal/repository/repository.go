@@ -28,7 +28,7 @@ type RoomRepository interface {
 	GetRoomByNumber(ctx context.Context, roomNumber int) (*models.Room, error)
 	GetAllAvailableRooms(ctx context.Context) ([]models.Room, error)
 	DeleteRoomByNumber(ctx context.Context, roomNumber int) error
-	UpdateRoom(ctx context.Context, req *models.Room, isAvailable bool) error
+	UpdateRoom(ctx context.Context, req *models.Room) error
 	UpdateAvailableness(ctx context.Context, roomNumber int, isAvailable bool) error
 }
 
@@ -49,28 +49,41 @@ type roomType struct {
 type room struct {
 	log *logging.Logger
 	*mongo.Collection
-	repo RoomTypeRepository
 }
 
 type booking struct {
 	log *logging.Logger
 	*mongo.Collection
-	repo RoomRepository
 }
 
-func NewRoomRepo(log *logging.Logger, db *mongo.Database) RoomRepository {
-	repo := NewRoomTypeRepository(log, db)
-	collection := db.Collection(roomCollection)
-	return &room{Collection: collection, repo: repo, log: log}
+func newRoomRepo(log *logging.Logger, db *mongo.Collection) RoomRepository {
+
+	return &room{Collection: db, log: log}
 }
 
-func NewBookingRepo(log *logging.Logger, db *mongo.Database) BookingRepository {
-	repo := NewRoomRepo(log, db)
-	collection := db.Collection(bookingCollection)
-	return &booking{Collection: collection, repo: repo, log: log}
+func newBookingRepo(log *logging.Logger, db *mongo.Collection) BookingRepository {
+
+	return &booking{Collection: db, log: log}
 }
 
-func NewRoomTypeRepository(log *logging.Logger, db *mongo.Database) RoomTypeRepository {
-	collection := db.Collection(roomTypeCollection)
-	return &roomType{Collection: collection, log: log}
+func newRoomTypeRepository(log *logging.Logger, db *mongo.Collection) RoomTypeRepository {
+	return &roomType{Collection: db, log: log}
+}
+
+type Repository struct {
+	Room     RoomRepository
+	Booking  BookingRepository
+	RoomType RoomTypeRepository
+}
+
+func NewRepository(log *logging.Logger, db *mongo.Database) *Repository {
+	collectionRoomType := db.Collection(roomTypeCollection)
+	collectionRoom := db.Collection(roomCollection)
+	collectionBooking := db.Collection(bookingCollection)
+
+	roomTypeRepo := newRoomTypeRepository(log, collectionRoomType)
+	roomRepo := newRoomRepo(log, collectionRoom)
+	bookingRepo := newBookingRepo(log, collectionBooking)
+
+	return &Repository{Room: roomRepo, RoomType: roomTypeRepo, Booking: bookingRepo}
 }

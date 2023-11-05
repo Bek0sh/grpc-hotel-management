@@ -18,7 +18,8 @@ service RoomService {
 
 message Room {
   int32 room_number = 1;
-  RoomType room_type = 2;
+  string room_type_id = 2;
+  RoomType room_type = 3;
 }
 
 // =====================================================
